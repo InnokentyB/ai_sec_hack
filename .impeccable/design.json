@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T00:00:00Z",
+  "title": "Design System: Agent Delegation Ledger",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.01 120)",
+          "oklch(27% 0.01 120)",
+          "oklch(39% 0.01 120)",
+          "oklch(51% 0.01 120)",
+          "oklch(63% 0.01 120)",
+          "oklch(75% 0.01 120)",
+          "oklch(87% 0.01 120)",
+          "oklch(95% 0.01 120)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Green ink",
+        "tonalRamp": [
+          "oklch(15% 0.02 160)",
+          "oklch(27% 0.02 160)",
+          "oklch(39% 0.02 160)",
+          "oklch(51% 0.02 160)",
+          "oklch(63% 0.02 160)",
+          "oklch(75% 0.02 160)",
+          "oklch(87% 0.02 160)",
+          "oklch(95% 0.02 160)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted green-gray",
+        "tonalRamp": [
+          "oklch(15% 0.02 155)",
+          "oklch(27% 0.02 155)",
+          "oklch(39% 0.02 155)",
+          "oklch(51% 0.02 155)",
+          "oklch(63% 0.02 155)",
+          "oklch(75% 0.02 155)",
+          "oklch(87% 0.02 155)",
+          "oklch(95% 0.02 155)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divider",
+        "tonalRamp": [
+          "oklch(15% 0.01 140)",
+          "oklch(27% 0.01 140)",
+          "oklch(39% 0.01 140)",
+          "oklch(51% 0.01 140)",
+          "oklch(63% 0.01 140)",
+          "oklch(75% 0.01 140)",
+          "oklch(87% 0.01 140)",
+          "oklch(95% 0.01 140)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Action green",
+        "tonalRamp": [
+          "oklch(15% 0.06 155)",
+          "oklch(27% 0.06 155)",
+          "oklch(39% 0.06 155)",
+          "oklch(51% 0.06 155)",
+          "oklch(63% 0.06 155)",
+          "oklch(75% 0.06 155)",
+          "oklch(87% 0.06 155)",
+          "oklch(95% 0.06 155)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Deep action green",
+        "tonalRamp": [
+          "oklch(15% 0.05 155)",
+          "oklch(27% 0.05 155)",
+          "oklch(39% 0.05 155)",
+          "oklch(51% 0.05 155)",
+          "oklch(63% 0.05 155)",
+          "oklch(75% 0.05 155)",
+          "oklch(87% 0.05 155)",
+          "oklch(95% 0.05 155)"
+        ]
+      },
+      "focus": {
+        "role": "focus",
+        "displayName": "Orange focus",
+        "tonalRamp": [
+          "oklch(15% 0.12 45)",
+          "oklch(27% 0.12 45)",
+          "oklch(39% 0.12 45)",
+          "oklch(51% 0.12 45)",
+          "oklch(63% 0.12 45)",
+          "oklch(75% 0.12 45)",
+          "oklch(87% 0.12 45)",
+          "oklch(95% 0.12 45)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field white",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(27% 0 0)",
+          "oklch(39% 0 0)",
+          "oklch(51% 0 0)",
+          "oklch(63% 0 0)",
+          "oklch(75% 0 0)",
+          "oklch(87% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field border",
+        "tonalRamp": [
+          "oklch(15% 0.02 150)",
+          "oklch(27% 0.02 150)",
+          "oklch(39% 0.02 150)",
+          "oklch(51% 0.02 150)",
+          "oklch(63% 0.02 150)",
+          "oklch(75% 0.02 150)",
+          "oklch(87% 0.02 150)",
+          "oklch(95% 0.02 150)"
+        ]
+      },
+      "secondary-border": {
+        "role": "neutral",
+        "displayName": "Secondary border",
+        "tonalRamp": [
+          "oklch(15% 0.025 145)",
+          "oklch(27% 0.025 145)",
+          "oklch(39% 0.025 145)",
+          "oklch(51% 0.025 145)",
+          "oklch(63% 0.025 145)",
+          "oklch(75% 0.025 145)",
+          "oklch(87% 0.025 145)",
+          "oklch(95% 0.025 145)"
+        ]
+      },
+      "secondary-hover": {
+        "role": "neutral",
+        "displayName": "Secondary tint",
+        "tonalRamp": [
+          "oklch(15% 0.015 140)",
+          "oklch(27% 0.015 140)",
+          "oklch(39% 0.015 140)",
+          "oklch(51% 0.015 140)",
+          "oklch(63% 0.015 140)",
+          "oklch(75% 0.015 140)",
+          "oklch(87% 0.015 140)",
+          "oklch(95% 0.015 140)"
+        ]
+      },
+      "inset": {
+        "role": "neutral",
+        "displayName": "Inset paper",
+        "tonalRamp": [
+          "oklch(15% 0.012 135)",
+          "oklch(27% 0.012 135)",
+          "oklch(39% 0.012 135)",
+          "oklch(51% 0.012 135)",
+          "oklch(63% 0.012 135)",
+          "oklch(75% 0.012 135)",
+          "oklch(87% 0.012 135)",
+          "oklch(95% 0.012 135)"
+        ]
+      }
+    },
+    "tonalRampNote": "Synthesized preview ramps only; implemented colors are normative in DESIGN.md.",
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "two-column",
+        "value": "1000px"
+      },
+      {
+        "name": "stack",
+        "value": "640px"
+      }
+    ],
+    "focus": {
+      "outline": "3px solid var(--focus)",
+      "outlineOffset": "3px"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "description": "Primary button as implemented in the dashboard.",
+      "html": "<button class=\"ds-primary\">Approve authorization</button>",
+      "css": ".ds-primary{font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;padding:10px 13px;border:1px solid var(--accent, #24563e);border-radius:4px;font-weight:600;line-height:1.4;cursor:pointer;background:var(--accent, #24563e);color:white}.ds-primary:hover{background:#193d2c}.ds-primary:focus-visible{outline:3px solid var(--focus, #a4471c);outline-offset:3px;}.ds-primary:disabled{opacity:.6;cursor:wait}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "description": "Secondary button as implemented in the dashboard.",
+      "html": "<button class=\"ds-secondary\">Cancel</button>",
+      "css": ".ds-secondary{font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;padding:10px 13px;border:1px solid var(--accent, #24563e);border-radius:4px;font-weight:600;line-height:1.4;cursor:pointer;background:transparent;color:var(--accent, #24563e);border-color:#8b9e90}.ds-secondary:hover{background:#e0e8df}.ds-secondary:focus-visible{outline:3px solid var(--focus, #a4471c);outline-offset:3px;}.ds-secondary:disabled{opacity:.6;cursor:wait}",
+      "refersTo": "button-secondary"
+    },
+    {
+      "name": "Labeled field",
+      "kind": "input",
+      "description": "Labeled field as implemented in the dashboard.",
+      "html": "<label class=\"ds-label\" for=\"ds-minutes\">Expires in minutes (1–10)</label><input class=\"ds-field\" id=\"ds-minutes\" type=\"number\" min=\"1\" max=\"10\" value=\"5\">",
+      "css": ".ds-label{display:block;margin:18px 0 7px;font:550 14px \"Segoe UI\",system-ui,sans-serif}.ds-field{width:100%;padding:10px 11px;border:1px solid #8d9c92;border-radius:4px;color:var(--ink, #202c28);background:#fff;font:15px \"Segoe UI\",system-ui,sans-serif;caret-color:var(--accent, #24563e)}.ds-field:focus-visible{outline:3px solid var(--focus, #a4471c);outline-offset:3px;}",
+      "refersTo": "input"
+    },
+    {
+      "name": "Document preview",
+      "kind": "card",
+      "description": "Document preview as implemented in the dashboard.",
+      "html": "<div class=\"ds-preview\"><p>Synthetic delegation document v1. No personal data.</p><span>SHA-256 · v1</span><code>2f2ac2fa1f112f7344ddf873c309f4b61c7e2fdd65e5ba9c614eab2f0700376e</code></div>",
+      "css": ".ds-preview{margin:14px 0;padding:14px;background:#e7ece5;color:var(--ink, #202c28);font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;}.ds-preview p{margin-top:0;line-height:1.6}.ds-preview span{font-size:11px;color:var(--muted, #52615a)}.ds-preview code{display:block;font:11px/1.65 ui-monospace,monospace;overflow-wrap:anywhere}"
+    },
+    {
+      "name": "Signed-data disclosure",
+      "kind": "custom",
+      "description": "Signed-data disclosure as implemented in the dashboard.",
+      "html": "<details class=\"ds-disclosure\"><summary>Signed data</summary><pre>{\"sequence\": 1}</pre></details>",
+      "css": ".ds-disclosure{margin-top:14px;color:var(--ink, #202c28);font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;}.ds-disclosure summary{font-weight:600;cursor:pointer;padding:7px 0}.ds-disclosure summary:focus-visible{outline:3px solid var(--focus, #a4471c);outline-offset:3px;}.ds-disclosure pre{white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.7 ui-monospace,monospace;padding:12px;background:#e7ece5;max-height:350px;overflow-y:auto}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Delegation Ledger",
+    "overview": "The implemented Operate interface uses muted paper, green actions and ruled sections. Russian controls, visible document previews and compact evidence records support inspection of a synthetic delegation case. The approved three-panel architecture is preserved.\n\nRecorded from the dashboard template, stylesheet and desktop, tablet and mobile captures in `artifacts/ledger-*.png`. These are implementation observations, not a visual-comp comparison or owner UAT result.",
+    "keyCharacteristics": [
+      "Flat paper surfaces with ruled boundaries.",
+      "Green controls and explicit textual states.",
+      "Dense, expandable evidence with wrapping identifiers."
+    ],
+    "rules": [
+      {
+        "name": "The Text Verdict Rule",
+        "body": "State meaning is carried by words and reason codes, not color alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Evidence Type Rule",
+        "body": "Monospace is reserved for hashes, IDs and signed data.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Surface Rule",
+        "body": "Separate records through spacing and fine boundaries rather than lifted cards.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep controls explicitly labeled in Russian and preserve visible keyboard focus.",
+      "Do wrap hashes and signed data within their available width.",
+      "Do express delivery verdicts and uncertainty in text."
+    ],
+    "donts": [
+      "Don't substitute decorative status color for a textual verdict.",
+      "Don't add external fonts or imagery to this utilitarian surface."
+    ]
+  }
+}

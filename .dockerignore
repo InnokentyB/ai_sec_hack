@@ -1,0 +1,6 @@
+.git
+.env
+history
+artifacts
+**/__pycache__
+**/*.egg-info

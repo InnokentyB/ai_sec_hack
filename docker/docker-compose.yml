@@ -1,0 +1,58 @@
+name: ai-sec-ledger
+x-runtime: &runtime
+  image: ai-sec-ledger:0.1.0
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+  platform: linux/amd64
+  user: "10001:10001"
+  cpus: 1.0
+  mem_limit: 512m
+  pids_limit: 100
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  init: true
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "2"
+services:
+  app:
+    <<: *runtime
+    ports: ["127.0.0.1:${LEDGER_PORT:-8080}:8080"]
+    environment:
+      LEDGER_DATA: /data
+      LEDGER_ORIGIN: ${LEDGER_ORIGIN:-http://127.0.0.1:8080}
+      LEDGER_RECEIVER_URL: http://receiver:8081
+      LEDGER_PUBLIC_OUTPUT: /provision/public.json
+    volumes: ["app-data:/data", "public-data:/provision"]
+    depends_on: [receiver]
+  receiver:
+    <<: *runtime
+    command: ["uvicorn", "receiver.service:create_app", "--factory", "--host", "0.0.0.0", "--port", "8081"]
+    environment:
+      LEDGER_DATA: /data
+      LEDGER_PUBLIC_KEYS: /trust/public.json
+    volumes: ["receiver-data:/data", "public-data:/trust:ro"]
+  tests:
+    <<: *runtime
+    profiles: [test]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:./browser-seccomp.json
+    mem_limit: 2g
+    pids_limit: 256
+    shm_size: 512m
+    command: ["pytest", "-q", "-p", "no:cacheprovider"]
+    environment:
+      LEDGER_ORIGIN: http://127.0.0.1:8080
+volumes:
+  app-data:
+  receiver-data:
+  public-data:
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${LEDGER_SUBNET:?Set an unused project-specific Docker subnet}
