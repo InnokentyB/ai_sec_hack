@@ -14,6 +14,8 @@ Input Gate и Surface Gate пройдены. Стек: Python 3.12 / FastAPI / S
 
 ## Материалы
 
+- [Live walkthrough with real screenshots (English)](docs/walkthrough/README.md) ·
+  [illustrated PDF](docs/walkthrough/harbor-delegation-story.pdf): bounded approval, delegation, blocked attempts, delivery and evidence verification.
 - [Спецификация v0.1](docs/AGENT_DELEGATION_TDPD_SPEC_v0.1.md): модель доверия,
   данные, 17 правил, lifecycle, архитектурные предложения и gate status.
 - [32 сценария и test plan](docs/AGENT_DELEGATION_SCENARIOS_v0.1.md): позитивные,

@@ -1,0 +1,43 @@
+{
+  "case": "Harbor Robotics to Northstar Logistics",
+  "root_id": "9f9a5b3a-6c11-4b02-a1e8-94d84e23b35b",
+  "child_id": "5eabe7fb-2a50-4097-8bc1-22db99b3499d",
+  "relay_child_id": "a1c627f1-c9eb-4d04-a5c5-1ca397012987",
+  "confirmed_attempt_id": "060991fd-8d83-4579-928d-45ca694fe80b",
+  "receipt_id": "55dec425-d225-4de1-8a30-07b8e0980bf0",
+  "document_sha256": "51b1808d4cf64084d9fda9d670e1e554c72e4e6e437bf1426d5ebd26cfdbd258",
+  "baseline_inbox_records": 1,
+  "final_inbox_records": 2,
+  "new_harbor_deliveries": 1,
+  "verification": {
+    "evidence.zip": {
+      "exit_code": 0,
+      "output": {
+        "valid": true,
+        "events": 19,
+        "receipts": 2,
+        "final_hash": "ff22b39540093c101643274518a731a56acef8f1da8338963ebd3e860af70086",
+        "meaning": "Integrity relative to supplied trust pins; no legal signature or independent history completeness."
+      }
+    },
+    "tampered.zip": {
+      "exit_code": 1,
+      "output": {
+        "valid": false,
+        "reason": "INVALID_MANIFEST_HASH"
+      }
+    }
+  },
+  "screenshot_note": "Real browser captures; PDF uses unretouched crops for legibility.",
+  "export_note": "Browser download capture did not finish; archive retrieved through authenticated read-only export.",
+  "files": {
+    "01-task.png": "5b5a2bdcc4b4d40116c52b55a59b9683ec3e3be6bc22c3d98e9660645f7d1b35",
+    "02-authorization.png": "b3aa246895e29d0bc3bc82fed0f4ba7aa487c9edf14577da8bc71e0063642468",
+    "03-scope-blocked.png": "364dd1191d1fc41e5851ebc987acb1d9335f14dbb3f14800db255508c3a75a27",
+    "04-delegated.png": "69908fd38669036ed22c015b377fcd0db9730bea361a89ba9d0226e14944e411",
+    "05-version-blocked.png": "6688de9d6fb5efada454eaa05a948e3f93582db6bc62bf8b88681448a47131d3",
+    "06-delivered.png": "17f1e6f6014593295b28f7d53143993b916cf7ca608619a0289da5dee49110da",
+    "07-budget-blocked.png": "a10532b1b92ec6b5cc25c5e6551e189ac4ab9bad120699570b62f00a2f27679b",
+    "08-receipt.png": "3e53c7305c29f732721320a9ff6a514a6789e3258b9b541308115f9be2120c1a"
+  }
+}
