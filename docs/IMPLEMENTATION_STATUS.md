@@ -58,3 +58,11 @@ English-language update: application templates, feedback, date formatting, brows
 acceptance locators, README, active architecture/specification/scenario documents and
 design references are in English. The 39-test suite, Ruff and strict mypy passed again
 for this version. Historical research and chat evidence retain their original language.
+
+Named synthetic case update: Harbor Robotics → Northstar Logistics, HAR-SEC-042,
+Maya/Atlas/Courier/Relay/Anna. Human-readable event labels preserve signed machine codes.
+New report IDs coexist with unchanged legacy document bytes. The combined refactor and
+scenario passed 38 integration tests and strict mypy (25 modules) in an isolated Docker
+container. Browser e2e tests were not rerun successfully after removal of the browser
+seccomp profile: standard Docker on this Tower does not currently permit Chromium's
+sandbox. No sandbox protection was disabled. Live rendering requires separate inspection.
