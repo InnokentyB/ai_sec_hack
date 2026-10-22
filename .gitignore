@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.sqlite
+*.sqlite3
+*.db
+__pycache__/
+.venv/
+node_modules/
+runtime/
+secrets/
+test-results/
+playwright-report/
