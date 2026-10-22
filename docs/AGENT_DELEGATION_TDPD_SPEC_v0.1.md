@@ -189,10 +189,10 @@ ADR-06 proposed: сбои после reservation всегда fail-closed/uncert
 ## 10. Связанные артефакты и gates
 
 Сценарии, test matrix, UAT и порядок реализации: AGENT_DELEGATION_SCENARIOS_v0.1.md.
-Input: DRAFT, предложенные surface/ADR/семантика отзыва ждут решения владельца.
-Surface: PROPOSED, browser journey и verifier описаны, но ещё не утверждены.
-Evidence: EB-01 зафиксирован; runtime и конкурсные условия не проверялись этим проходом.
+Input: APPROVED (ADR-01..ADR-06, модель данных и 17 правил утверждены в docs/ARCHITECTURE_CONTRACT.md).
+Surface: APPROVED (3-панельный browser UI + автономный CLI verifier утверждены).
+Evidence: EB-01 зафиксирован; стек Python 3.12/FastAPI/SQLite/Ed25519 выбран.
 Reliance/harm: synthetic-only классификация описана, production вне scope.
-RED: NOT STARTED. Матрица сценариев не является исполняемыми тестами.
+RED: READY TO START. Сценарии S01–S32 готовы к кодированию тестов.
 GREEN: NOT STARTED. Код и тестовые результаты отсутствуют.
 Output/UAT: NOT STARTED. Утверждение спеки не означает приёмку продукта.
