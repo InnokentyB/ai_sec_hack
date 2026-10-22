@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -35,12 +36,13 @@ def main() -> int:
                 )
                 if ready.status_code == 200 and ready.json()["receiver_available"]:
                     break
-            except httpx.HTTPError:
-                pass
+            except httpx.HTTPError as error:
+                logging.getLogger(__name__).debug(
+                    "Read-only readiness probe failed (%s); retrying", type(error).__name__
+                )
             time.sleep(0.1)
         else:
             raise RuntimeError("App/receiver readiness timed out; no mutation attempted")
-
 
         def request(method: str, path: str, role: str = "owner", payload: object = None) -> Json:
             response = client.request(

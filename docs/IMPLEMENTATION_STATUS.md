@@ -1,3 +1,10 @@
+> Проверка после аудита 22.10.2026: приведённые ниже результаты относятся к
+> предыдущей версии с кастомным seccomp, а не к исправленному рабочему дереву.
+> Сейчас: 38 integration PASS, mypy PASS; 2 browser FAIL при запуске Chromium
+> (`No usable sandbox`) со стандартной изоляцией Docker. Чистая пересборка
+> ещё не подтверждена. Русские документы восстановлены, DESIGN/PRODUCT удалены.
+> Полный зелёный прогон и UAT не заявляются. Актуальные команды — в README.
+
 # Implementation status · 2026-10-22
 
 Implemented synthetic prototype according to the approved architecture; owner UAT is pending.

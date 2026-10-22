@@ -38,9 +38,6 @@ services:
   tests:
     <<: *runtime
     profiles: [test]
-    security_opt:
-      - no-new-privileges:true
-      - seccomp:./browser-seccomp.json
     mem_limit: 2g
     pids_limit: 256
     shm_size: 512m
@@ -52,7 +49,4 @@ volumes:
   receiver-data:
   public-data:
 networks:
-  default:
-    ipam:
-      config:
-        - subnet: ${LEDGER_SUBNET:?Set an unused project-specific Docker subnet}
+  default: {}

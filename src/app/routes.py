@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
+from app.presentation import ACTOR_LABELS, EVENT_LABELS
 from core.canonical import Json
 from core.models import ChildProposal, ExecutionProposal, RootProposal
 from services.authorization import DOCUMENTS, Denied, Runtime
@@ -87,7 +88,13 @@ def dashboard(request: Request, rt: Runtime = Depends(runtime)) -> Response:
     return templates.TemplateResponse(
         request,
         "dashboard.html",
-        {"state": state, "csrf": csrf, "request_id": secrets.token_urlsafe(16)},
+        {
+            "state": state,
+            "csrf": csrf,
+            "request_id": secrets.token_urlsafe(16),
+            "actors": ACTOR_LABELS,
+            "event_labels": EVENT_LABELS,
+        },
     )
 
 
@@ -175,5 +182,8 @@ def scripted_execute(child_id: str, request: Request, rt: Runtime = Depends(runt
         )
     )
     if request.query_params.get("attack") == "document":
-        document_id = "doc-v1" if document_id == "doc-v2" else "doc-v2"
+        if document_id.startswith("harbor-report-"):
+            document_id = "harbor-report-v2" if document_id.endswith("v1") else "harbor-report-v1"
+        else:
+            document_id = "doc-v1" if document_id == "doc-v2" else "doc-v2"
     return rt.execute(cast(str, child["executor_id"]), execution_proposal(child, document_id))

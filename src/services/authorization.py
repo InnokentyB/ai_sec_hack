@@ -12,76 +12,16 @@ from uuid import uuid4
 
 import httpx
 
-from core.canonical import Json, bytes_hash, digest
+from core.canonical import Json, digest
 from core.crypto import Keys, verify
 from core.models import ChildProposal, ExecutionProposal, RootProposal
 from receiver.service import LocalReceiver
+from services import dispatcher
 from services.ledger import append
+from services.policy import DOCUMENTS as DOCUMENTS
+from services.policy import Denied as Denied
+from services.receiver_client import RemoteReceiver
 from services.storage import Store
-
-DOCUMENTS = {
-    "doc-v1": {
-        "document_id": "doc-v1",
-        "version_id": "v1",
-        "bytes": "Synthetic delegation document v1. No personal data.",
-    },
-    "doc-v2": {
-        "document_id": "doc-v2",
-        "version_id": "v2",
-        "bytes": "Synthetic delegation document v2. Changed content.",
-    },
-}
-for _document in DOCUMENTS.values():
-    _document["snapshot_hash"] = bytes_hash(_document["bytes"].encode())
-
-
-class Denied(Exception):
-    """A fail-closed domain decision with a safe, stable reason code."""
-
-    def __init__(self, reason: str, status: int = 403) -> None:
-        self.reason = reason
-        self.status = status
-        super().__init__(reason)
-
-
-class RemoteReceiver:
-    """Bounded private-network transport; no automatic retry of external effects."""
-
-    def __init__(self, url: str, keys: Keys) -> None:
-        self.url = url.rstrip("/")
-        self.keys = keys
-
-    def public(self) -> dict[str, str]:
-        """Obtain receiver public key during trusted private-network provisioning."""
-        with httpx.Client(timeout=5, trust_env=False) as client:
-            result = client.get(self.url + "/public-key")
-            result.raise_for_status()
-            return cast(dict[str, str], result.json())
-
-    def receive(self, envelope: Json) -> Json:
-        """Send one signed executor attempt exactly once."""
-        with httpx.Client(timeout=5, trust_env=False) as client:
-            response = client.post(self.url + "/rpc", json=envelope)
-            response.raise_for_status()
-            return cast(Json, response.json()["receipt"])
-
-    def query(self, operation: str, **fields: object) -> Json:
-        """Sign a read-only service query; credentials never enter URLs."""
-        signed = self.keys.signed(
-            "authorization", {"operation": operation, "time": time.time(), **fields}
-        )
-        with httpx.Client(timeout=5, trust_env=False) as client:
-            response = client.post(self.url + "/rpc", json=signed)
-            response.raise_for_status()
-            return cast(Json, response.json())
-
-    def lookup(self, key: str) -> Json | None:
-        """Look up a receipt without dispatching."""
-        return cast(Json | None, cast(Json, self.query("lookup", idempotency_key=key)["receipt"]))
-
-    def inbox(self) -> list[Json]:
-        """Read the isolated synthetic inbox."""
-        return cast(list[Json], self.query("inbox")["messages"])
 
 
 class Runtime:
@@ -358,89 +298,16 @@ class Runtime:
         return (result, True)
 
     def confirm(self, attempt: Json, receipt: Json) -> Json:
-        """Confirm only a trusted receipt bound to the exact attempted action."""
-        self.receiver_key()
-        payload = verify(receipt, self.keys.public, "receiver")
-        for field in (
-            "attempt_id",
-            "root_id",
-            "child_id",
-            "case_id",
-            "snapshot_hash",
-            "recipient_id",
-            "idempotency_key",
-        ):
-            if payload[field] != attempt[field]:
-                raise ValueError("INVALID_RECEIPT")
-        if cast(str, payload["receiver_id"]) != "synthetic-inbox":
-            raise ValueError("WRONG_AUDIENCE")
-        if self.testing and self.fail_result_write:
-            raise sqlite3.OperationalError("injected result write failure")
-        with self.store.connection() as db:
-            current = self.store.get(db, "attempt", cast(str, attempt["attempt_id"]))
-            assert current is not None
-            if current["execution_status"] == "confirmed":
-                return current
-            current.update(execution_status="confirmed", receipt=receipt)
-            self.store.put(db, "attempt", cast(str, current["attempt_id"]), current)
-            self.event(db, "DISPATCH_CONFIRMED", cast(str, current["authenticated_actor"]), current)
-            return current
+        """Validate and persist a receiver receipt for this runtime."""
+        return dispatcher.confirm(self, attempt, receipt)
 
     def execute(self, actor: str, proposal: ExecutionProposal) -> Json:
-        """Reserve before network I/O; preserve uncertainty on every post-reserve failure."""
-        attempt, fresh = self.reserve(actor, proposal)
-        if not fresh:
-            return attempt
-        try:
-            payload = {
-                field: attempt[field]
-                for field in (
-                    "attempt_id",
-                    "case_id",
-                    "root_id",
-                    "child_id",
-                    "authenticated_actor",
-                    "idempotency_key",
-                    "snapshot_hash",
-                    "recipient_id",
-                )
-            }
-            payload.update(action="deliver_document", audience="synthetic-inbox")
-            signed_action = self.keys.signed(actor, payload)
-            attempt["signed_action"] = signed_action
-            with self.store.connection() as db:
-                attempt["execution_status"] = "dispatching"
-                self.store.put(db, "attempt", cast(str, attempt["attempt_id"]), attempt)
-                self.event(db, "DISPATCH_STARTED", actor, attempt)
-            receipt = self.receiver.receive(
-                {**signed_action, "document": DOCUMENTS[proposal.document_id]["bytes"]}
-            )
-            return self.confirm(attempt, receipt)
-        except (httpx.HTTPError, OSError, ValueError, KeyError, sqlite3.Error):
-            attempt["execution_status"] = "uncertain"
-            try:
-                with self.store.connection() as db:
-                    self.store.put(db, "attempt", cast(str, attempt["attempt_id"]), attempt)
-                    self.event(db, "DISPATCH_UNCERTAIN", actor, attempt)
-            except sqlite3.Error:
-                pass
-            return attempt
+        """Reserve the root slot and dispatch one action."""
+        return dispatcher.execute(self, actor, proposal)
 
     def reconcile(self, attempt_id: str) -> Json:
-        """Read-only receiver lookup; absent evidence never releases a budget."""
-        with self.store.connection() as db:
-            attempt = self.store.get(db, "attempt", attempt_id)
-        if attempt is None or attempt["execution_status"] not in ("uncertain", "confirmed"):
-            raise Denied("INVALID_INPUT", 409)
-        if attempt["execution_status"] == "confirmed":
-            return attempt
-        try:
-            receipt = self.receiver.lookup(cast(str, attempt["idempotency_key"]))
-            if receipt:
-                return self.confirm(attempt, receipt)
-        except (httpx.HTTPError, OSError, ValueError, KeyError, sqlite3.Error):
-            pass
-        return attempt
+        """Reconcile a reserved attempt without sending it again."""
+        return dispatcher.reconcile(self, attempt_id)
 
     def state(self) -> Json:
         """Project persisted case state for the owner, including actual receiver records."""

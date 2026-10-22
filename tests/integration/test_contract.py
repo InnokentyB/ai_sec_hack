@@ -195,3 +195,38 @@ def test_s04_s27_authentication(client: TestClient) -> None:
     grant = root(client)
     delegation = child(client, grant)
     assert execute(client, delegation, actor_id="B").status_code == 422
+
+
+def test_named_report_preserves_legacy_snapshots(client: TestClient) -> None:
+    """New demo documents coexist with earlier signed authorizations and evidence."""
+    legacy = root(client)
+    response = client.post(
+        "/api/roots",
+        headers=owner(client),
+        json={
+            "request_id": "harbor-demo",
+            "document_id": "harbor-report-v1",
+            "recipient_id": "Anna",
+            "minutes": 5,
+            "delegation_allowed": True,
+        },
+    )
+    assert response.status_code == 200
+    report = response.json()
+    assert report["snapshot_hash"] != legacy["snapshot_hash"]
+    assert (
+        execute(client, child(client, legacy), "legacy-delivery").json()["execution_status"]
+        == "confirmed"
+    )
+    delegation = child(client, report)
+    assert (
+        execute(client, delegation, "report-delivery", document_id="harbor-report-v1").json()[
+            "execution_status"
+        ]
+        == "confirmed"
+    )
+    from services.exporter import verify_pack
+
+    rt = client.app.state.runtime
+    pack = client.get("/api/export", headers=owner(client)).content
+    assert verify_pack(pack, rt.keys.trust())["receipts"] == 2

@@ -6,37 +6,42 @@
 <body>
 <header><div><h1>Agent Delegation Ledger</h1><p>The owner authorizes. Agents act within scope. The receiver confirms.</p></div><span class="badge">DEMO · SYNTHETIC</span></header>
 <div class="notice">Agents A, B and C are deterministic simulations. Signatures attest to service history; they are not personal electronic signatures or legal powers of attorney.</div>
+<section class="case-brief" aria-labelledby="case-title">
+<h2 id="case-title">Harbor Robotics → Northstar Logistics</h2>
+<p>Maya, Harbor's security lead, authorizes delivery of report <strong>HAR-SEC-042 / v1</strong> to <strong>Anna, Northstar's procurement lead</strong>. Atlas coordinates; Courier delivers; Relay is the backup. One exact document, one recipient, one shared delivery slot.</p>
+<p class="muted">Fictional organizations, people and findings. Mallory is an unapproved recipient. A revised report needs a new authorization.</p>
+</section>
 <p id="feedback" role="status" aria-live="polite"></p>
 <main class="workspace">
 <section aria-labelledby="permissions"><h2 id="permissions">Permissions</h2>
 <details open><summary>New authorization</summary>
 <form id="grant-form" data-request-id="{{ request_id }}">
-<label for="document">Document</label><select id="document" name="document_id"><option value="doc-v1">Synthetic Doc · v1</option><option value="doc-v2">Synthetic Doc · v2</option></select>
-{% for id, doc in state.documents.items() %}<div class="preview" data-document="{{ id }}" {% if id != 'doc-v1' %}hidden{% endif %}><p>{{ doc.bytes }}</p><span>SHA-256 · {{ doc.version_id }}</span><code>{{ doc.snapshot_hash }}</code></div>{% endfor %}
-<label for="recipient">Recipient</label><select id="recipient" name="recipient_id"><option>Anna</option></select>
+<label for="document">Document</label><select id="document" name="document_id"><option value="harbor-report-v1">HAR-SEC-042 · Approved report · v1</option><option value="harbor-report-v2">HAR-SEC-042 · Unapproved revision · v2</option></select>
+{% for id, doc in state.documents.items() %}<div class="preview" data-document="{{ id }}" {% if id != 'harbor-report-v1' %}hidden{% endif %}><p>{{ doc.bytes }}</p><span>SHA-256 · {{ doc.version_id }}</span><code>{{ doc.snapshot_hash }}</code></div>{% endfor %}
+<label for="recipient">Recipient</label><select id="recipient" name="recipient_id"><option value="Anna">Anna · Northstar procurement lead</option></select>
 <label for="minutes">Expires in minutes (1–10)</label><input id="minutes" name="minutes" type="number" min="1" max="10" value="5" required>
-<label class="check"><input type="checkbox" name="delegation_allowed" checked> Allow A to delegate to B or C</label>
+<label class="check"><input type="checkbox" name="delegation_allowed" checked> Allow Atlas (A) to delegate to Courier (B) or Relay (C)</label>
 <p class="muted">Action: deliver the document to the synthetic inbox. Shared limit: one dispatch per authorization.</p>
 <div class="actions"><button type="submit">Approve authorization</button><button type="reset" class="secondary">Cancel</button></div>
 </form></details>
 {% for record in state.roots %}{% set root = record.envelope.payload %}
-<article class="grant"><h3>Owner → A</h3><code>{{ root.grant_id }}</code>
-<dl><dt>Document</dt><dd>{{ root.document_id }}</dd><dt>Recipient</dt><dd>{{ root.recipient_id }}</dd><dt>Status</dt><dd>{% if record.revoked %}Revoked{% elif state.now >= root.expires_at %}Expired{% else %}Active{% endif %}</dd><dt>Shared slot</dt><dd>{{ 'Reserved or used' if record.reserved_by else 'Available' }}</dd></dl>
+<article class="grant"><h3>Maya → Atlas</h3><code>{{ root.grant_id }}</code>
+<dl><dt>Document</dt><dd>{{ state.documents[root.document_id].title }}</dd><dt>Recipient</dt><dd>{{ root.recipient_id }}</dd><dt>Status</dt><dd>{% if record.revoked %}Revoked{% elif state.now >= root.expires_at %}Expired{% else %}Active{% endif %}</dd><dt>Shared slot</dt><dd>{{ 'Reserved or used' if record.reserved_by else 'Available' }}</dd></dl>
 <p class="muted">Expires: <time data-timestamp="{{ root.expires_at }}">{{ root.expires_at }}</time></p>
 {% if not record.revoked %}<div class="actions"><button class="secondary" data-post="/api/roots/{{ root.grant_id }}/revoke">Revoke</button>
-<button data-post="/api/demo/delegate/{{ root.grant_id }}/B">A: delegate to B</button><button class="secondary" data-post="/api/demo/delegate/{{ root.grant_id }}/C">A: delegate to C</button></div>
-<details><summary>Test a blocked action</summary><button class="secondary" data-post="/api/demo/delegate/{{ root.grant_id }}/B?attack=scope">A: replace Anna with Mallory</button></details>{% endif %}
+<button data-post="/api/demo/delegate/{{ root.grant_id }}/B">Atlas: delegate to Courier</button><button class="secondary" data-post="/api/demo/delegate/{{ root.grant_id }}/C">Atlas: delegate to Relay</button></div>
+<details><summary>Test a blocked action</summary><button class="secondary" data-post="/api/demo/delegate/{{ root.grant_id }}/B?attack=scope">Atlas: change recipient to Mallory</button></details>{% endif %}
 {% if record.revoked and record.reserved_by %}<p>Revocation does not guarantee cancellation of a dispatch already started.</p>{% endif %}</article>
 {% else %}<p class="empty">No authorizations yet. Review the document and approve its constraints.</p>{% endfor %}
-{% for signed in state.children %}{% set child = signed.payload %}<article class="grant"><h3>A → {{ child.executor_id }}</h3><code>{{ child.grant_id }}</code><p>Only {{ child.recipient_id }} · one delivery · no further delegation</p><div class="actions"><button data-post="/api/demo/execute/{{ child.grant_id }}">{{ child.executor_id }}: deliver document</button><button class="secondary" data-post="/api/demo/execute/{{ child.grant_id }}?attack=document">Test document substitution</button></div></article>{% endfor %}
+{% for signed in state.children %}{% set child = signed.payload %}<article class="grant"><h3>Atlas → {{ actors.get(child.executor_id, child.executor_id) }}</h3><code>{{ child.grant_id }}</code><p>Only {{ child.recipient_id }} · one delivery · no further delegation</p><div class="actions"><button data-post="/api/demo/execute/{{ child.grant_id }}">{{ actors.get(child.executor_id, child.executor_id) }}: deliver report</button><button class="secondary" data-post="/api/demo/execute/{{ child.grant_id }}?attack=document">Test unapproved report v2</button></div></article>{% endfor %}
 </section>
 <section aria-labelledby="audit"><div class="section-title"><h2 id="audit">Event chain</h2><span>{{ state.events|length }}</span></div>
 <a class="button secondary" href="/api/export" download>Download evidence.zip</a>
 <p class="muted">Verify the archive with the standalone CLI and trusted fingerprints obtained outside the archive. Verification cannot establish history completeness without an independent checkpoint.</p>
 {% for attempt in state.attempts %}<article class="attempt"><h3>{% if attempt.execution_status == 'confirmed' %}Delivery confirmed{% elif attempt.execution_status == 'uncertain' %}Delivery status unknown{% elif attempt.execution_status == 'blocked' %}Attempt blocked{% else %}Dispatch in progress{% endif %}</h3><code>{{ attempt.attempt_id }}</code><p>{{ attempt.reason }}</p>{% if attempt.execution_status == 'uncertain' %}<p>The slot remains reserved. Reconcile the receipt; there is no automatic retry.</p><button data-post="/api/attempts/{{ attempt.attempt_id }}/reconcile">Reconcile receipt</button>{% endif %}</article>{% endfor %}
-<ol class="events">{% for signed in state.events|reverse %}{% set event = signed.payload %}<li><div><strong>#{{ event.sequence }} · {{ event.kind }}</strong><span>{{ event.actor_id }}</span></div><code>{{ event.current_hash }}</code><details><summary>Signed data</summary><pre>{{ signed|tojson(indent=2) }}</pre></details></li>{% else %}<li class="empty">History will appear after your first decision.</li>{% endfor %}</ol>
+<ol class="events">{% for signed in state.events|reverse %}{% set event = signed.payload %}<li><div><strong>#{{ event.sequence }} · {{ event_labels.get(event.kind, event.kind) }}</strong><span>{{ actors.get(event.actor_id, event.actor_id) }}</span></div><code>{{ event.current_hash }}</code><details><summary>{{ event.kind }} · signed data</summary><pre>{{ signed|tojson(indent=2) }}</pre></details></li>{% else %}<li class="empty">History will appear after your first decision.</li>{% endfor %}</ol>
 </section>
-<section aria-labelledby="inbox"><div class="section-title"><h2 id="inbox">Synthetic inbox</h2><span>Anna</span></div>
+<section aria-labelledby="inbox"><div class="section-title"><h2 id="inbox">Synthetic inbox</h2><span>Anna · Northstar</span></div>
 {% if not state.receiver_available %}<p role="alert">The receiver is unavailable. Inbox contents cannot currently be verified.</p>{% else %}<p>{{ state.inbox|length }} message(s) · separate receiver storage</p>{% endif %}
 {% for message in state.inbox %}{% set receipt = message.receipt.payload %}<article class="message"><h3>Document received</h3><p>{{ message.document }}</p><dl><dt>Recipient</dt><dd>{{ receipt.recipient_id }}</dd><dt>Received</dt><dd><time data-timestamp="{{ receipt.received_at }}">{{ receipt.received_at }}</time></dd></dl><span>SHA-256</span><code>{{ receipt.snapshot_hash }}</code><details><summary>Receiver receipt · Ed25519</summary><pre>{{ message.receipt|tojson(indent=2) }}</pre></details></article>{% else %}<p class="empty">Empty for now. The actual receiver record will appear here after an executor delivers the document.</p>{% endfor %}
 </section>

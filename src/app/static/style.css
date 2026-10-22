@@ -50,3 +50,8 @@ footer { padding: 20px 32px; border-top: 1px solid var(--line); color: var(--mut
 .login button { margin-top: 20px; }
 @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr 1fr; } .workspace > section:last-child { grid-column: 1 / -1; border-top: 1px solid var(--line); } }
 @media (max-width: 640px) { header { display: block; padding: 24px 20px; } .badge { display: inline-block; margin-top: 18px; } .workspace { display: block; } .workspace > section { border-right: 0; border-bottom: 1px solid var(--line); padding: 24px 20px; } .notice, #feedback { padding-left: 20px; padding-right: 20px; } }
+.case-brief { padding: 22px 32px; border-bottom: 1px solid var(--line); }
+.case-brief h2 { margin-bottom: 10px; }
+.case-brief p { max-width: 110ch; margin: 8px 0; }
+.preview p, .message > p { white-space: pre-line; }
+@media (max-width: 640px) { .case-brief { padding: 20px; } }

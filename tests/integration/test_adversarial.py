@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from core.canonical import canonical
 from services.exporter import verify_pack
-from test_contract import actor, child, execute, owner, root
+from tests.integration.test_contract import actor, child, execute, owner, root
 
 
 @pytest.fixture()

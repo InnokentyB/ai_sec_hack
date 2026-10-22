@@ -1,135 +1,150 @@
-# Architecture Contract · Agent Delegation Ledger
+# Architecture Contract & Technical Stack · Agent Delegation Ledger
 
-Approved 22 October 2026. Input and Surface Gates: APPROVED.
-Implementation is authorized by the owner's current request. Human UAT remains pending.
+> **Дата утверждения:** 22 октября 2026
+> **Статус:** APPROVED (Input Gate & Surface Gate пройдены)
+> **Контекст:** AI Security Hackathon · Защищённое и проверяемое делегирование полномочий агентов.
 
-## Stack
+---
 
-| Component | Decision |
-|---|---|
-| Language | Python 3.12, explicit type annotations, strict mypy |
-| HTTP | FastAPI, Uvicorn, strict Pydantic v2 proposal validation |
-| UI | Server-rendered Jinja2 HTML, vanilla CSS and JavaScript; English |
-| Persistence | SQLite WAL; BEGIN IMMEDIATE serializes root-wide reservations and revocation |
-| Cryptography | Ed25519 through cryptography, separate role keys |
-| Canonicalization | RFC 8785 JSON Canonicalization Scheme |
-| Evidence | Signed ZIP manifest, independently trusted fingerprints, standalone CLI |
-| Verification | pytest, integration tests, sandboxed Playwright Chromium browser tests |
-| Runtime | Tower Docker, Linux amd64, non-root, loopback access |
+## 1. Выбор технологического стека (Stack Selection)
 
-## Repository layout
+| Компонент | Технология | Обоснование |
+|---|---|---|
+| **Язык разработки** | **Python 3.12** | Строгая статическая типизация (`mypy --strict`, Python Type Hints), нативная поддержка криптографических примитивов, чистота синтаксиса для аудита ИБ. |
+| **Backend & API** | **FastAPI + Uvicorn** | Автоматическая валидация входных данных через Pydantic v2 (fail-closed на неизвестные поля), асинхронная неблокирующая обработка, ноль оверинжиниринга. |
+| **Пользовательский интерфейс (Surface)** | **Server-rendered HTML + Jinja2 + Vanilla CSS** | Исключает сборочные цепочки JS (`dist/`, `node_modules`), гарантирует 100% запуск в изолированном Docker-контейнере с чистого листа, нулевая поверхность сетевых уязвимостей. |
+| **Хранилище данных (Storage)** | **SQLite 3 (WAL mode)** | Встроенная база данных, транзакции уровня `BEGIN IMMEDIATE` для атомарного резервирования бюджета корневого разрешения, раздельные файлы БД для приложения и receiver inbox. |
+| **Криптография** | **`cryptography` (Ed25519)** | Стандартная, прошедшая аудит библиотека. Асимметричные подписи для всех ролей: Authorization Service, Orchestrator, Executor, Receiver, Ledger. |
+| **Канонизация данных** | **RFC 8785 (JSON Canonicalization Scheme)** | Детерминированный порядок ключей и кодирование для неизменности хешей `previous_hash` и подписей событий. |
+| **Автономный верификатор** | **Standalone CLI (`cli/verify.py`)** | Работает без запущенного веб-сервера, принимает trusted key fingerprints аргументами, проводит независимый аудит экспортированного пакета. |
+| **Тестирование** | **`pytest` + `pytest-asyncio` + `Playwright`** | Полное покрытие матрицы S01–S32: от изолированных unit-тестов криптографии до браузерных e2e проверок интерфейса. |
+| **Изоляция и рантайм** | **Docker (amd64 / non-root / loopback)** | Запуск под непривилегированным пользователем `appuser` (UID 10001), PID limits, no socket mounts, временные контейнеры с `--rm`. |
 
-```text
-src/app/                FastAPI factory, protected routes, templates and static assets
-src/core/               Strict proposal models, canonicalization and role-separated signing
-src/services/           Authorization, storage, ledger, dispatch and evidence export
-src/receiver/           Independent synthetic inbox service, storage and signing key
-src/simulated_agents/   Deterministic orchestrator and executor proposals
-cli/verify.py           Offline archive verifier
-cli/smoke.py            Running-container synthetic delivery and restart checks
-tests/integration/      Authorization, races, failures, recovery and tampering
-tests/e2e/              Real browser acceptance flows
-docker/                 Reviewed Dockerfile, Compose and browser seccomp profile
+---
+
+## 2. Размещение и структура репозитория (Layout Decision)
+
+Принято решение **отказаться от вложенных поддиректорий (`work/...`)** в пользу стандартной, прозрачной для жюри и инструментов автоматической проверки структуры в корне репозитория:
+
+```
+ai_sec_hack/
+├── src/
+│   ├── app/                      # Веб-сервер и маршруты
+│   │   ├── main.py               # Точка входа приложения, lifespan, инициализация
+│   │   ├── routes.py             # HTTP endpoints (просмотр, grant, dispatch, export)
+│   │   ├── static/               # CSS токены, переменные, стили 3-панельного UI
+│   │   └── templates/            # Jinja2 шаблоны (dashboard, grant_modal, audit_view)
+│   ├── core/                     # Чистое ядро (Zero I/O, доменные модели и криптография)
+│   │   ├── models.py             # Pydantic-модели: RootGrant, ChildGrant, Attempt, Receipt, Event
+│   │   ├── crypto.py             # Ed25519 генерация ключей, подписание, верификация
+│   │   └── canonical.py          # Детерминированная сериализация RFC 8785
+│   ├── services/                 # Бизнес-логика и сервисы оркестрации
+│   │   ├── authorization.py      # Реализация правил R01–R05 (проверка сужения scope, сроков)
+│   │   ├── storage.py            # SQLite шлюз, транзакции атомарного бюджета слота (R06)
+│   │   ├── ledger.py             # Append-only журнал событий, хеш-цепь (R12, R15)
+│   │   ├── dispatcher.py         # Диспетчеризация, idempotency_key, uncertain recovery (R07, R08)
+│   │   └── exporter.py           # Формирование проверочного пакета evidence.zip (R13)
+│   ├── receiver/                 # Изолированный сервис приёма (Synthetic Inbox)
+│   │   ├── service.py            # Валидация попытки, сохранение в отдельную БД, выдача Receipt
+│   │   └── storage.py            # Отдельный SQLite storage для inbox Anna
+│   └── simulated_agents/         # ScriptedDelegationAgent (ADR-04)
+│       ├── orchestrator.py       # Агент A: генерация предложений child grant
+│       └── executor.py           # Агенты B и C: отправка документа в inbox
+├── cli/
+│   └── verify.py                 # Автономный CLI-верификатор архива (R13, R14)
+├── tests/
+│   ├── conftest.py               # Фикстуры: in-memory DBs, synthetic clock, тестовые ключи
+│   ├── unit/                     # Модульные проверки инвариантов ядра (R01-R05, crypto)
+│   ├── integration/              # Проверки R06-R10, R15-R17 (гонки бюджетов, сбои хранилища)
+│   └── e2e/                      # Playwright браузерные тесты полного цикла (S01-S05, S12-S14, UAT)
+├── docker/
+│   ├── Dockerfile                # Минимальный python:3.12-slim образ
+│   └── docker-compose.yml        # Конфигурация для запуска приложения и тестов на Tower
+├── docs/                         # Спецификации, сценарии и архитектурные контракты
+├── .agents/                      # Правила для агентов разработки (agent-guardrails.md)
+├── .env.example                  # Документированные переменные окружения
+├── pyproject.toml                # Зависимости и конфигурация linters / mypy / pytest
+├── AGENTS.md                     # Контракт разработки и операционные ограничения
+└── README.md                     # Главный манифест и инструкции по запуску
 ```
 
-The root layout replaces the earlier proposed nested `work/...` directory.
+---
 
-## ADR-01: Roles and service isolation
+## 3. Архитектурные решения (ADR-01 — ADR-06: Status APPROVED)
 
-Roles: owner O, orchestrator A, executors B/C, Receiver/Anna and Ledger.
-Authorization Service, A, B, C, Receiver and Ledger have separate Ed25519 keys.
-The authorization service attests to owner confirmation; this is not the owner's personal signature.
-Principal identity comes from authenticated credentials, never editable `actor_id` input.
-Owner access uses a local demo session, with CSRF and exact-origin checks on cookie mutations.
+### ADR-01: Топология сервисов и ролевая изоляция
+- Логически независимые роли: **Владелец (O)**, **Оркестратор (A)**, **Исполнители (B, C)**, **Принимающая сторона (Receiver/Anna)**, **Журнал (Ledger)**.
+- Каждая роль имеет собственную пару ключей Ed25519 (`key_id`, `public_key`). Принципал проверяется строго по криптографическому ключу и сессии, а не по аргументу `actor_id` в теле запроса.
+- Receiver Inbox физически изолирован: он имеет собственный закрытый ключ подписи квитанций (`Receipt`) и отдельный файл базы данных SQLite (`receiver_inbox.db`).
 
-Receiver has its own container, SQLite file and private receipt key. App and receiver
-share only public-key provisioning data. Neither service receives the other's private
-key directory. No production credentials or external document delivery are involved.
-The first receiver public key is pinned through the trusted private Compose network.
-Unexpected key rotation fails verification rather than silently replacing trust.
+### ADR-02: Транзакционный бюджет и Anti-Deadlock Policy (R06, R09)
+- Проблема: два субагента (B и C) получают валидные `ChildGrant` от одного `RootGrant` с `max_uses=1` и пытаются параллельно выполнить отправку.
+- Решение: Атомарное бронирование общего слота в `storage.py` через явную транзакцию SQLite:
+  ```sql
+  BEGIN IMMEDIATE;
+  SELECT status, reserved_by FROM root_grants WHERE grant_id = :root_id;
+  -- Если status != 'ACTIVE' или slot_reserved == 1 -> FAIL CLOSED (LIMIT_RESERVED_OR_USED)
+  UPDATE root_grants SET slot_reserved = 1, reserved_by = :attempt_id, reserved_at = :now WHERE grant_id = :root_id;
+  COMMIT;
+  ```
+- **Anti-Deadlock Guard:** Никаких блокировок операционной системы (`.lock` файлов). Если процесс аварийно завершился во время статуса `RESERVED` до получения квитанции, при перезапуске системы статус попытки помечается как `UNCERTAIN` (а не вечный лок). Автоматический повторный вызов запрещён; доступна только операция `Reconcile` (read-only опрос receiver по `idempotency_key`).
 
-## ADR-02: Atomic shared budget and crash recovery
+### ADR-03: Криптографические конверты и канонизация (RFC 8785)
+- Все события журнала (`EvidenceEvent`) связываются криптографической цепочкой:
+  $$\text{event\_digest} = \text{SHA-256}(\text{canonical\_json}(\text{payload}))$$
+  $$\text{current\_hash} = \text{SHA-256}(\text{previous\_hash} \parallel \text{event\_digest} \parallel \text{sequence})$$
+- Экспортируемый пакет (`evidence.zip`) содержит:
+  1. `manifest.json` (список файлов, их SHA-256 хеши, финальный хеш цепочки, подпись службы авторизации).
+  2. `snapshot.json` (исходный синтетический документ).
+  3. `grants.json` (дерево разрешений Root → Child).
+  4. `events.jsonl` (каноническая последовательность событий).
+  5. `receipt.json` (подписанная квитанция от Receiver).
 
-B and C may each hold a valid child of one root with max_uses=1. They share one slot.
-Inside BEGIN IMMEDIATE: validate signatures, scope, expiry and revocation; reject an
-already occupied slot; persist the attempt, reservation and signed event; commit.
-Only then contact the receiver. Revocation uses the same serialization boundary.
+### ADR-04: ScriptedDelegationAgent (Детерминированная симуляция)
+- Оркестратор и исполнители симулируются локальными детерминированными сценариями без вызова внешних непроверенных LLM API. Это гарантирует 100% повторяемость тестов, нулевую стоимость вызовов и защиту от утечки токенов.
 
-No OS lock files or indefinite mutexes. A crash rolls back open SQLite transactions.
-On restart, unfinished reserved/dispatching attempts become uncertain. Their slots remain
-occupied; only read-only receipt reconciliation is allowed. This conservative treatment
-is the explicitly approved recovery strategy, not permission for an automatic resend.
+### ADR-05: Docker Runtime Guardrails (Tower Compliance)
+- Запуск только в изолированном контейнере:
+  - Порты: `127.0.0.1:8080` (loopback only).
+  - Пользователь: `USER appuser:appuser` (non-root).
+  - Лимиты: `pids_limit: 100`, `mem_limit: 512m`, `cpus: 1.0`.
+  - Запреты: `privileged: false`, нет монтирования `docker.sock` или хостовых системных путей.
 
-## ADR-03: Signed canonical evidence
+### ADR-06: Консервативная обработка неопределённости (Uncertain State)
+- Безопасность превыше доступности (Fail-Closed). Если запрос отправлен в Receiver, но ответный HTTP-сокет разорван:
+  - Слот остаётся занятым (повторная отправка невозможна).
+  - Состояние попытки: `UNCERTAIN`.
+  - Интерфейс честно отображает предупреждение: *"Статус доставки неизвестен; требуется сверка квитанции"*.
 
-Events include case ID, sequence, previous hash, actor, server time, payload and its digest.
+---
 
-```text
-payload_digest = SHA256(RFC8785(payload))
-current_hash = SHA256(previous_hash || payload_digest || decimal(sequence))
+## 4. Контракт пользовательского интерфейса (3-панельный Surface)
+
+Интерфейс доступен в браузере по адресу `http://127.0.0.1:8080`:
+
+```
++-----------------------------------------------------------------------------------+
+|  Agent Delegation Ledger  ·  [STATUS: DEMO / SYNTHETIC ENVIRONMENT]                |
++-----------------------------------------------------------------------------------+
+|  [ ПАНЕЛЬ 1: РАЗРЕШЕНИЯ ]   |  [ ПАНЕЛЬ 2: АУДИТ И ЦЕПОЧКА ] | [ ПАНЕЛЬ 3: INBOX ] |
+|                             |                                |                     |
+|  * Выбор документа:         |  Хеш-цепь событий:             |  Получатель: Anna   |
+|    [ Synthetic Doc v1 v ]   |  [#1] ROOT_GRANT_ISSUED        |  Сообщений: 1       |
+|  * Получатель: [ Anna    ]   |       Sign: ed25519:auth_srv   |  -----------------  |
+|  * Делегирование: [x] Да    |  [#2] CHILD_GRANT_DELEGATED    |  * Doc: Doc v1      |
+|  * Срок действия: [ 5 мин ] |       Sign: ed25519:orch_a     |  * SHA256: e3b0c442 |
+|  * Общий лимит: 1 попытка   |  [#3] ATTEMPT_RESERVED         |  * Время: 18:20:15  |
+|                             |  [#4] DISPATCH_CONFIRMED       |  * Receipt: valid   |
+|  [ Подтвердить разрешение ] |       Receipt: ed25519:recv    |    Sign: ed25519:rc |
+|  [ Отозвать (Revoke)      ] |  ----------------------------  |                     |
+|                             |  [ Скачать Evidence Pack.zip ] |  [ Очистить ящик ]  |
++-----------------------------------------------------------------------------------+
 ```
 
-The signed event covers the complete canonical event, including linkage and hashes.
-Root grants are signed by Authorization Service, children by A, actions by B/C,
-receipts by Receiver and events by Ledger.
+---
 
-`evidence.zip` contains:
+## 5. Готовность к началу Фазы RED (TDPD Gate Transition)
 
-- `manifest.json`: schema, member hashes, event count, final hash; Authorization signature.
-- `snapshot.json`: immutable synthetic document snapshots.
-- `grants.json`: signed root and child grants.
-- `events.jsonl`: ordered signed evidence chain.
-- `receipt.json`: signed receiver receipts.
-- `attempts.json`: execution states and signed executor actions.
-- `public.json`: public keys only; these never establish their own trust.
-
-`cli/verify.py` accepts trusted role fingerprints independently of the archive and checks
-member hashes, signatures, chain continuity, checkpoint, grant scope and receipt linkage.
-It runs without the web or receiver service. It does not establish legal authority or
-history completeness without an independent checkpoint.
-
-## ADR-04: Deterministic agents
-
-ScriptedDelegationAgent behavior is implemented by local, reproducible proposals.
-No external LLM API, provider credentials or model-evaluation claim. Scripted agents
-never simulate owner consent. The UI labels the simulation explicitly.
-
-## ADR-05: Docker execution boundary
-
-All project installation, builds, tests and browser automation on Tower run in Docker.
-Linux amd64; app UID 10001; no privileged mode, host networking, Docker socket mount,
-host-root mount or added host capabilities. Preserve Chromium sandbox protections.
-Default app port: 127.0.0.1:8080. Reach it through SSH forwarding.
-
-App/receiver limits: 1 CPU, 512 MiB, 100 PIDs, bounded JSON logs. Browser test limits are
-larger (2 GiB, 256 PIDs, 512 MiB shared memory). Temporary jobs use `run --rm`.
-Use project-specific networks/volumes; stop services without deleting volumes.
-See README and .env.example for reviewed commands and environment settings.
-
-## ADR-06: Uncertain outcomes
-
-If dispatch was reserved and its result cannot be established, the attempt becomes
-uncertain and the root slot stays occupied. A missing receipt is not proof of no delivery.
-Reconciliation is a read-only lookup by stable idempotency key. Only a valid matching
-receipt changes the attempt to confirmed. No automatic retry, budget reset or replacement root.
-
-## Surface contract
-
-A three-panel owner interface:
-
-1. Permissions: document/version/hash preview, recipient, delegation toggle, 1–10 minute
-   expiry (default 5), explicit approval, revocation and scripted agent actions.
-2. Event chain: signed ordered history, allowed/blocked/uncertain outcomes, reconciliation
-   and evidence download.
-3. Synthetic inbox: actual independent receiver records, document hash and signed receipt.
-
-Show DEMO / SYNTHETIC, distinguish authorization from delivery, and explain uncertainty
-and signature limitations. Disable the submitted control while pending. Preserve state
-after reload. Use English labels, visible keyboard focus and textual verdicts.
-Desktop target: 1280×800. No horizontal overflow at 768px; mobile stacks the panels.
-
-## Gates
-
-Input and Surface: approved. Implementation and automated checks: see
-[implementation status](IMPLEMENTATION_STATUS.md). Human U01–U05 acceptance is separate
-and remains pending until the owner explicitly accepts the working result.
+- **Input Gate:** **APPROVED** (модель данных, сущности, правила R01–R17 зафиксированы).
+- **Surface Gate:** **APPROVED** (3-панельный интерфейс + CLI верификатор зафиксированы).
+- **Следующий шаг:** Настройка окружения (контейнер Docker, `pyproject.toml`, базовые фикстуры) и написание первых падающих тестов (**RED Phase**) по сценариям `S02` (создание RootGrant) и `S05` (успешная сквозная доставка через оркестратор и исполнителя).

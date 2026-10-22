@@ -18,7 +18,18 @@ class Store:
         try:
             db.execute("PRAGMA journal_mode=WAL")
             db.executescript(
-                "\n                CREATE TABLE IF NOT EXISTS objects (\n                    kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,\n                    PRIMARY KEY(kind, id));\n                CREATE TABLE IF NOT EXISTS events (\n                    sequence INTEGER PRIMARY KEY, data TEXT NOT NULL);\n            "
+                """
+                CREATE TABLE IF NOT EXISTS objects (
+                    kind TEXT NOT NULL,
+                    id TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    PRIMARY KEY(kind, id)
+                );
+                CREATE TABLE IF NOT EXISTS events (
+                    sequence INTEGER PRIMARY KEY,
+                    data TEXT NOT NULL
+                );
+                """
             )
         finally:
             db.close()

@@ -1,47 +1,39 @@
-# Operational and Architecture Guardrails for AI Agents v1.0
+# 🛑 Operational & Architecture Guardrails for AI Agents (v1.0)
 
-Workspace rules for the bounded Agent Delegation Ledger MVP.
-The approved architecture contract resolves platform-specific implementation details.
+> Auto-loaded workspace rule for AI Sec Hackathon: Agent Delegation Ledger.
+> Derived from cross-project audit, multi-agent failure analysis, and production post-mortems.
 
-## 1. YAGNI and scope
+---
 
-BLOCK work outside the current approved MVP. No custom hypervisors, cgroup/namespace
-emulators, socket parsers or speculative infrastructure. Build one delegation depth
-(owner → orchestrator → executor) and one synthetic document-delivery action.
-Do not generate bureaucratic specifications or fabricated verification reports.
-Documentation must describe actual behavior or explicitly labeled requirements.
-Use standard platform tools and maintained libraries.
+## 1. YAGNI & Anti-Overengineering Gate (Жёсткий запрет оверинжиниринга)
+- **BLOCK**: Запрещено проектировать и реализовывать функционал, выходящий за рамки спецификации и MVP текущего этапа:
+  - Никаких собственных гипервизоров, эмуляторов cgroups/namespaces, кастомных парсеров `/proc/net`, если это прямо не специфицировано.
+  - В проекте Delegation Ledger фокус только на bounded MVP: одна глубина (владелец → оркестратор → исполнитель), одно действие (доставка synthetic документа в локальный inbox).
+- **BLOCK**: Запрещено создавать бюрократические "документы ради документов" (спецификации на спецификации, фейковые отчеты о канареечных прогонах, матрицы лабораторий). Вся документация должна описывать РЕАЛЬНО работающий код.
+- При получении задачи агент обязан выбрать простейшее стандартное решение платформы (Docker CLI, SSH, стандартный HTTP/MCP клиент, готовые криптографические библиотеки).
 
-## 2. Deadlock and crash recovery
+## 2. Anti-Deadlock & Fault-Tolerance Policy
+- **BLOCK**: Любой механизм блокировки (file locks, mutexes, leases, delegation budgets) ОБЯЗАН иметь стратегию восстановления после аварийного падения процесса:
+  - Обязательна проверка существования процесса-владельца блокировки (`process.kill(pid, 0)`).
+  - Запрещены блокировки со статусом "fail-closed without auto-recovery" при падении процесса.
+  - Если процесс-владелец мёртв (`ESRCH`), блокировка должна восстанавливаться автоматически.
 
-Every lock, lease or atomic budget needs a recovery strategy if its owning process dies.
-For process-owned locks, check whether the owner still exists and recover stale ownership.
-Never leave an unbounded orphan lock. The approved SQLite strategy uses bounded
-transactions and startup recovery of unfinished reservations as uncertain. Preserve the
-slot and allow read-only receipt reconciliation; do not automatically resend an effect.
+## 3. Clean-Build & Test Contract
+- **BLOCK**: Тесты не имеют права рассчитывать на то, что артефакты компиляции (`dist/`, `build/`) уже существуют в репозитории:
+  - Либо тесты выполняются напрямую через рантайм TypeScript (`tsx`),
+  - Либо скрипт проверки обязан содержать явный шаг сборки: `"check": "npm run build && npm test"`.
+- Любое изменение файлов конфигурации инсталляции (`install-*.sh`, `*.service`, Dockerfile) должно предварительно проверяться на наличие source-contract тестов.
 
-## 3. Clean-build test contract
+## 4. Resource Hygiene & Stream Discipline
+- **BLOCK**: При работе с потоками (`ReadableStream`, `getReader()`, сокеты) освобождение ресурсов (`reader.cancel()`, `reader.releaseLock()`, `socket.destroy()`) ОБЯЗАТЕЛЬНО должно находиться в блоке `finally`.
+- **BLOCK**: Запрещён "слепой копипаст" блоков импортов. Любой файл должен содержать ТОЛЬКО те импорты, которые непосредственно используются. Линтер неиспользуемых импортов должен давать 0 предупреждений.
 
-Tests must not depend on pre-existing dist/build artifacts. Use a direct runtime or an
-explicit clean build-and-test command. Before changing installation scripts, service
-configuration or Dockerfiles, inspect relevant existing source-contract tests.
-Infrastructure errors are not evidence of a behavioral RED phase.
+## 5. Code Readability & "No-Minification" Rule
+- **BLOCK**: Категорически запрещено сжимать код в однострочники или экономить строки переносами ради обхода лимитов линтера (антипаттерн минифицированного спагетти).
+- 1 инструкция на строку. Стандартные отступы (2 пробела). Пробелы вокруг бинарных операторов и фигурных скобок обязательны.
+- Все публичные функции, интерфейсы и классы ОБЯЗАНЫ иметь JSDoc / Docstring комментарии.
 
-## 4. Resource hygiene
-
-Release or cancel stream readers, handles and sockets in guaranteed finally/cleanup
-blocks. Do not copy unused imports. The unused-import lint result must be clean.
-
-## 5. Readability
-
-No minified one-line code to bypass line limits. Use standard formatting, one statement
-per line, clear names and explicit type annotations; no Any escape hatches.
-Document public functions and classes with docstrings. Prefer project-native Python
-formatting rather than applying TypeScript indentation conventions to Python.
-
-## 6. Environment and infrastructure safety
-
-Never hardcode external endpoints, secrets or host addresses in executable code.
-Parameterize endpoints with arguments/environment variables, document new settings in
-.env.example, and preserve the Tower container-only execution policy in AGENTS.md.
-Never copy production credentials into synthetic fixtures, source or container images.
+## 6. Environment & Infrastructure Parameterization
+- **BLOCK**: Никаких захардкоженных IP-адресов, внешних доменов или секретов в исполняемом коде и скриптах:
+  - Все параметры хостов и IP должны передаваться через аргументы командной строки или переменные окружения (`process.env` / `$VAR`).
+  - Все новые переменные окружения должны немедленно документироваться в `.env.example`.
