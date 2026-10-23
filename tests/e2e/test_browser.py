@@ -49,6 +49,7 @@ def test_s01_s02_s05_s06_s10_s14_s23_s31_browser(live, tmp_path: Path) -> None:
             page.goto(origin + "/login")
             page.get_by_label("Owner access key").fill(app.state.runtime.credentials["owner"])
             page.get_by_role("button", name="Open ledger").click()
+            page.get_by_role("button", name="Show full workspace", exact=True).click()
             expect(page.get_by_text("No authorizations yet.", exact=False)).to_be_visible()
             expect(page.get_by_role("heading", name="Harbor Robotics → Northstar Logistics")).to_be_visible()
             page.get_by_role("button", name="Approve authorization").click()
@@ -58,6 +59,7 @@ def test_s01_s02_s05_s06_s10_s14_s23_s31_browser(live, tmp_path: Path) -> None:
             expect(page.get_by_role("status")).to_contain_text("SCOPE_ESCALATION")
             page.get_by_role("button", name="Atlas: delegate to Courier", exact=True).click()
             expect(page.get_by_role("heading", name="Atlas → Courier · Delivery agent")).to_be_visible()
+            page.get_by_text("Test document protection", exact=True).click()
             page.get_by_role("button", name="Test unapproved report v2").click()
             expect(page.get_by_role("status")).to_contain_text("DOCUMENT_CHANGED")
             page.get_by_role("button", name="Courier · Delivery agent: deliver report", exact=True).click()
@@ -68,6 +70,20 @@ def test_s01_s02_s05_s06_s10_s14_s23_s31_browser(live, tmp_path: Path) -> None:
             with page.expect_download() as download:
                 page.get_by_role("link", name="Download evidence.zip").click()
             assert download.value.suggested_filename == "evidence.zip"
+            total_events = page.locator("[data-event]").count()
+            page.get_by_label("Event type", exact=True).select_option("blocked")
+            assert page.locator("[data-event]").count() > 0
+            assert page.locator('[data-event]:not([data-category="blocked"])').count() == 0
+            page.get_by_label("Search activity", exact=True).fill("no-such-event-123")
+            expect(page.get_by_role("heading", name="No matching events")).to_be_visible()
+            page.locator("#activity-clear").click()
+            expect(page.locator("[data-event]")).to_have_count(total_events)
+            page.get_by_label("Participant", exact=True).select_option("B")
+            page.get_by_label("Group by", exact=True).select_option("actor")
+            expect(page.locator(".activity-group h3")).to_have_text(["Courier · Delivery agent"])
+            assert page.locator('[data-event]:not([data-actor="B"])').count() == 0
+            page.get_by_role("button", name="Clear filters", exact=True).first.click()
+            expect(page.locator("[data-event]")).to_have_count(total_events)
             for width, name in [(1280, "desktop"), (768, "tablet"), (390, "mobile")]:
                 page.set_viewport_size({"width": width, "height": 800})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
@@ -95,6 +111,7 @@ def test_s12_s17_s18_s32_browser(live) -> None:
             page.goto(origin + "/login")
             page.get_by_label("Owner access key").fill(app.state.runtime.credentials["owner"])
             page.get_by_role("button", name="Open ledger").click()
+            page.get_by_role("button", name="Show full workspace", exact=True).click()
             page.get_by_role("button", name="Approve authorization").click()
             page.get_by_role("button", name="Atlas: delegate to Courier", exact=True).click()
             page.get_by_role("button", name="Courier · Delivery agent: deliver report", exact=True).click()

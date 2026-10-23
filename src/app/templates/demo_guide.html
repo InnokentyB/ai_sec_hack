@@ -1,0 +1,57 @@
+{# Guide progress is derived from durable records, never a browser completion flag. #}
+{% set guide = namespace(record=none, child=none, attempt=none, received=false) %}
+{% for record in state.roots|reverse %}
+  {% if loop.first and record.envelope.payload.document_id == 'harbor-report-v1' %}{% set guide.record = record %}{% endif %}
+{% endfor %}
+{% if guide.record %}
+  {% set root = guide.record.envelope.payload %}
+  {% for signed in state.children %}
+    {% if signed.payload.parent_id == root.grant_id and signed.payload.executor_id == 'B' %}{% set guide.child = signed.payload %}{% endif %}
+  {% endfor %}
+  {% for attempt in state.attempts %}
+    {% if attempt.get('root_id') == root.grant_id and attempt.execution_status != 'blocked' %}{% set guide.attempt = attempt %}{% endif %}
+  {% endfor %}
+  {% for message in state.inbox %}
+    {% if message.receipt.payload.root_id == root.grant_id and guide.attempt and message.receipt.payload.attempt_id == guide.attempt.attempt_id %}{% set guide.received = true %}{% endif %}
+  {% endfor %}
+{% endif %}
+<section class="demo-guide" aria-labelledby="guide-title" id="demo-guide" {% if guide.record and not guide.attempt and state.now < root.expires_at %}data-guide-expires="{{ root.expires_at }}"{% endif %}>
+  <p class="guide-eyebrow">Your first delivery · guided demo</p>
+  <h2 id="guide-title">You are Maya, the security lead.</h2>
+  <p>Authorize one approved report for Anna. Follow the next action below; each step appears when you need it.</p>
+  <ol class="guide-progress" aria-label="Demo steps">
+    <li>1. Approve scope</li><li>2. Delegate to Courier</li><li>3. Deliver report</li><li>4. Check receipt</li>
+  </ol>
+  <div class="guide-next">
+  {% if guide.attempt and guide.attempt.execution_status == 'confirmed' %}
+    {% if state.receiver_available and guide.received %}
+      <h3>Step 4 of 4 · Delivery verified in the receiver inbox</h3>
+      <p>Success: the receiver has a signed receipt for this authorization and delivery. Earlier reports may also be in the inbox; the matching receipt below is marked “This demo”.</p>
+      <a class="button" href="#receipt-{{ guide.attempt.attempt_id }}" data-guide-target>Inspect this delivery's receipt</a>
+      <a class="button secondary" href="#new-authorization" data-guide-target>Start another demo</a>
+    {% else %}
+      <h3>Step 4 of 4 · Check the receiving side</h3>
+      <p>The attempt is confirmed, but a matching inbox receipt cannot currently be verified. Reload to check again. Do not send the report again.</p>
+      <a class="button" href="/">Refresh receipt status</a>
+    {% endif %}
+  {% elif guide.attempt %}
+    <h3>Step 3 of 4 · Check the existing delivery</h3>
+    <p>The slot is reserved. {% if guide.attempt.execution_status == 'uncertain' %}The result is unknown: use “Reconcile receipt” to check without sending again.{% else %}Dispatch is in progress. Refresh the page to check its saved result; do not send again.{% endif %}</p>
+    <a class="button" href="#attempt-{{ guide.attempt.attempt_id }}" data-guide-target>Inspect delivery status</a>
+  {% elif not guide.record or guide.record.revoked or state.now >= root.expires_at or not root.delegation_allowed or guide.record.reserved_by %}
+    <h3>Step 1 of 4 · Approve your delivery boundaries</h3>
+    <p>{% if guide.record %}The latest demo authorization cannot continue this flow. Keep its history and create a fresh authorization. {% endif %}Open “New authorization”, keep approved report v1 and Anna, choose 5 minutes, and leave delegation enabled. Then click “Approve authorization”.</p>
+    <a class="button" href="#new-authorization" data-guide-target>Begin: review and approve</a>
+  {% elif not guide.child %}
+    <h3>Step 2 of 4 · Ask Atlas to delegate to Courier</h3>
+    <p>Your approval is saved; nothing has been sent. In the highlighted authorization, click “Atlas: delegate to Courier”. A child capability will appear with the same boundaries.</p>
+    <a class="button" href="#grant-{{ root.grant_id }}" data-guide-target>Go to Atlas's next action</a>
+  {% else %}
+    <h3>Step 3 of 4 · Ask Courier to deliver the report</h3>
+    <p>Courier now has permission for v1 to Anna. Click “Courier · Delivery agent: deliver report” in its capability below. Then check the receiver inbox.</p>
+    <a class="button" href="#child-{{ guide.child.grant_id }}" data-guide-target>Go to Courier's next action</a>
+  {% endif %}
+  </div>
+  <button type="button" class="quiet" id="workspace-mode" aria-expanded="false">Show full workspace</button>
+  <details class="guide-extras"><summary>After your first delivery: try the safety checks</summary><p>“Test a blocked action” tries Mallory instead of Anna. “Test document protection” tries changed report bytes. Relay tests the shared limit after delivery. These are optional tests; a blocked attempt should not add a report to the inbox.</p><p>All participants and data are fictional. A receipt proves service acceptance, not human readership or a legal signature. <a href="#audit">Inspect the activity history</a> or download evidence from the inbox panel.</p></details>
+</section>
